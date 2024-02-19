@@ -18,7 +18,7 @@ lof = LOF()
 
 #  값 선택 (가장 가까운 이웃의 수)
 k = 5
-lof_scores = LOF.local_outlier_factor(k,data,distances)
+lof_scores = lof.local_outlier_factor(k,data,distances)
 
 # 원점으로부터 각 데이터 포인트의 거리 계산
 distances_from_origin = torch.norm(data, dim=1)
