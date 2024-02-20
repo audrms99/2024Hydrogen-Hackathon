@@ -1,46 +1,55 @@
-# -*- coding: utf-8 -*-
+import numpy as np
+import pandas as pd
+from sklearn.neighbors import LocalOutlierFactor
 
-import torch
-import torch.nn.functional as F
+class LOFModel:
+    def __init__(self, n_neighbors=20, contamination=0.1):
+        self.clf = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
+
+    def fit(self, X):
+        self.clf.fit(X)
+
+    def predict(self, X):
+        return self.clf.fit_predict(X)
+
+    def score_samples(self, X):
+        return self.clf.negative_outlier_factor_
+
+# CSV 파일에서 데이터 읽기
+file_path = 'random_data.csv'
+data_csv = pd.read_csv(file_path)
+
+# 데이터 준비
+X = data_csv.values
+
+# LOF 모델 초기화 및 학습
+lof_model = LOFModel(n_neighbors=20, contamination=0.1)
+lof_model.fit(X)
+
+# LOF 모델로 이상치 예측 및 점수 계산
+y_pred = lof_model.predict(X)
+scores = lof_model.score_samples(X)
+
+# 이상치 시각화
+# 시각화 코드를 추가하여 이상치를 적절히 표시할 수 있습니다.
 import matplotlib.pyplot as plt
 
-class LOF:
-    def __init__(self):
-        pass
-    
-    def euclidean_distance(self, x1, x2):
-        return torch.sqrt(torch.sum((x1 - x2) ** 2, dim=1))
+# 이상치 시각화
+plt.figure(figsize=(10, 6))
 
-    def k_distance(self, k, x, distances):
-        sorted_distances, _ = torch.sort(distances, dim=0)
-        return sorted_distances[k]
+# 이상치를 시각화할 때 사용할 색상
+colors = np.array(['blue', 'red'])
 
-    def reachability_distance(self, k, x_i, x_j, distances):
-        return torch.max(self.k_distance(k, x_j, distances), self.euclidean_distance(x_i, x_j))
+# 이상치가 아닌 데이터 포인트를 먼저 플로팅합니다.
+plt.scatter(X[:, 0], X[:, 1], c='blue', edgecolor='k', s=20)
 
-    def local_reachability_density(self, k, x_i, neighbors, distances):
-        sum_reachability = torch.sum(self.reachability_distance(k, x_i, neighbors, distances))
-        return len(neighbors) / sum_reachability
+# 이상치를 빨간색으로 플로팅합니다.
+plt.scatter(X[y_pred == -1, 0], X[y_pred == -1, 1], c='red', edgecolor='k', s=80, marker='x', label='이상치')
 
-    # LOF 최종 결과 도출
-    def local_outlier_factor(self, k, x, distances):
-        n = x.size(0)
-        lof = torch.zeros(n)
-        for i in range(n):
-            neighbors = torch.cat([x[:i], x[i+1:]], dim=0)
-            lrd_i = self.local_reachability_density(k, x[i], neighbors, distances[i])
-            lrd_neighbors = torch.stack([self.local_reachability_density(k, x[j], neighbors, distances[j]) for j in range(n) if j != i])
-            lof[i] = torch.mean(lrd_neighbors) / lrd_i
-        return lof
+plt.title('Determination of defective hydrogen')
+plt.xlabel('temperature and humidity')
+plt.ylabel('press')
+plt.legend()
+plt.grid(True)
+plt.show()
 
-# 사용 예시:
-# lof_instance = LOF()
-
-# 모든 쌍의 거리 계산
-# distances = torch.cdist(data, data)
-
-# k 값 선택 (가장 가까운 이웃의 수)
-# k = 5
-
-# LOF 점수 계산
-# lof_scores = lof_instance.local_outlier_factor(k, data, distances)
